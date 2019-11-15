@@ -471,7 +471,7 @@ for i in range(NGENS):
     # take 2 parents
     i1, i2 = np.random.choice(range(NPOP), 2, replace=False)
     # create offspring
-    o1, o2 = net_cross(pop[i1], pop[i2])
+    o1, o2 = net_cross(pop[i1], pop[i2],mutate_prob=2/3)
     o1_loss, _ = train(o1, INIT_EPOCH)
     o2_loss, _ = train(o2, INIT_EPOCH)
     min_o = o1 if o1_loss < o2_loss else o2
