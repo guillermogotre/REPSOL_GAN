@@ -17,5 +17,5 @@ def run(c, config_path='./config.json', git=False, update=True, dev=True):
     if update:
         c.run('pip install -r requirements.txt --user')
 
-    c.run("CUDA_VISIBLE_DEVICES={} python main.py {} --config{}".format(config_json['GPU_ID'], "--dev" if dev else "", config_path))
+    c.run("CUDA_VISIBLE_DEVICES={} python main.py {} --config {}".format(config_json['GPU_ID'], "--dev" if dev else "", config_path))
 
