@@ -461,9 +461,8 @@ if args.newpop:
         print("Built pop {}".format(i))
 else:
     pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
-    losses = []
-    for m in pop:
-        train(m,0)
+    losses = [train(m,0)[0] for m in pop]
+
 
 print("Starting genetic")
 for i in range(NGENS):
