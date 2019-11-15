@@ -484,7 +484,10 @@ for i in range(NGENS):
 
     # random local search
 
-    ils = np.random.choice(range(NPOP))
+    if np.random.rand() < 0.5:
+        ils = np.random.choice(range(NPOP))
+    else:
+        ils = np.argmin(losses)
     ls_loss, _ = train(pop[ils], LS_EPOCHS)
     losses[ils] = ls_loss
 
