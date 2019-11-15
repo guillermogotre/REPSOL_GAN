@@ -216,7 +216,8 @@ def train(m, epochs):
 
         i_from_best += 1
 
-        if best_l is None or tloss < best_l:
+        if best_e is None or tloss < best_l:
+            best_e = e
             i_from_best = 0
             best_w = m.save_weights(best_model_path)
             best_l = tloss
@@ -416,7 +417,7 @@ def save_model(m, m_path):
 def load_model(m_path):
     with open(m_path.format('pkl'), 'rb') as ifile:
         desc, weights = pickle.load(ifile)
-        print("Loading model {}".format(m_path),desc)
+        # print("Loading model {}".format(m_path),desc)
         m = build_model(desc)
         m(tf.zeros((1, 17)))
         for l, w in zip(m.layers, weights):
