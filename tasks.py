@@ -4,7 +4,6 @@ import json
 
 @task
 def run(c, config_path='./config.json', git=False):
-    print(os.listdir('.'))
     assert (os.path.isfile(config_path))
     with open(config_path,'r') as ifile:
         config_json = json.load(ifile)
@@ -15,5 +14,5 @@ def run(c, config_path='./config.json', git=False):
     if git:
         c.run('git pull')
 
-    c.run('python main.py')
+    c.run("CUDA_VISIBLE_DEVICES={} python main.py".format(config_json['GPU_ID']))
 
