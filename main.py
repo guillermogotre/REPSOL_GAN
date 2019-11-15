@@ -416,6 +416,7 @@ def save_model(m, m_path):
 def load_model(m_path):
     with open(m_path.format('pkl'), 'rb') as ifile:
         desc, weights = pickle.load(ifile)
+        print("Loading model {}".format(m_path),desc)
         m = build_model(desc)
         m(tf.zeros((1, 17)))
         for l, w in zip(m.layers, weights):
