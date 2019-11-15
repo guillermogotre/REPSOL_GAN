@@ -458,7 +458,7 @@ for i in range(NGENS):
     ls_loss, _ = train(pop[ils], LS_EPOCHS)
     losses[ils] = ls_loss
 
-    print("GEN {}: Mean={}\tStd={}".format(i,np.mean(losses),np.std(losses)))
+    print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),np.mean(losses),np.std(losses)))
 
 
 def save_model(m, m_path):
