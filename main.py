@@ -27,6 +27,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--dev', dest='dev', action='store_true')
 parser.add_argument('--config', dest='config_path', type=str, required=True)
+parser.add_argument('--newpop', action='store_true')
 args = parser.parse_args()
 
 with open(args.config_path,'r') as ifile:
@@ -399,6 +400,22 @@ def net_cross(m1, m2, mutate_prob=0.1):
     # return c1,c2
     return c1, c2
 
+def save_model(m, m_path):
+    with open(m_path.format('pkl'), 'wb') as ofile:
+        desc = build_mdesc(m)
+        weights = [l.get_weights() for l in m.layers]
+        pickle.dump((desc, weights), ofile)
+
+
+def load_model(m_path):
+    with open(m_path.format('pkl'), 'rb') as ifile:
+        desc, weights = pickle.load(ifile)
+        m = build_model(desc)
+        m(tf.zeros((1, 17)))
+        for l, w in zip(m.layers, weights):
+            l.set_weights(w)
+        return m
+
 ####
 ##
 ##  GENETIC ROUTINE
@@ -417,24 +434,27 @@ losses = []
 P_BN = 0.5
 MAX_LEN = 8
 print("Building population")
-for i in range(NPOP):
-    # random desc
-    p_bn = np.random.rand()
-    out_n = np.random.randint(MAX_WIDTH)
-    len_m = np.random.randint(MAX_LEN - 1)
-    d = [
-        {'out': np.random.randint(MAX_WIDTH), 'kr': 'l2', 'br': 'l2', 'bn': np.random.rand() < P_BN} for i in
-        range(np.random.randint(1, MAX_LEN - 1))]
-    d += [{'out': 1, 'kr': 'l2', 'br': 'l2', 'final': True}]
-    print(d)
-    # generate model
-    m = build_model(d)
-    # train for init_epoch
-    loss, _ = train(m, INIT_EPOCH)
-    # add to pop
-    pop.append(m)
-    losses.append(loss)
-    print("Built pop {}".format(i))
+if args.newpop:
+    for i in range(NPOP):
+        # random desc
+        p_bn = np.random.rand()
+        out_n = np.random.randint(MAX_WIDTH)
+        len_m = np.random.randint(MAX_LEN - 1)
+        d = [
+            {'out': np.random.randint(MAX_WIDTH), 'kr': 'l2', 'br': 'l2', 'bn': np.random.rand() < P_BN} for i in
+            range(np.random.randint(1, MAX_LEN - 1))]
+        d += [{'out': 1, 'kr': 'l2', 'br': 'l2', 'final': True}]
+        print(d)
+        # generate model
+        m = build_model(d)
+        # train for init_epoch
+        loss, _ = train(m, INIT_EPOCH)
+        # add to pop
+        pop.append(m)
+        losses.append(loss)
+        print("Built pop {}".format(i))
+else:
+    pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
 
 print("Starting genetic")
 for i in range(NGENS):
@@ -458,24 +478,7 @@ for i in range(NGENS):
     ls_loss, _ = train(pop[ils], LS_EPOCHS)
     losses[ils] = ls_loss
 
-    print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),np.mean(losses),np.std(losses)))
-
-
-def save_model(m, m_path):
-    with open(m_path.format('pkl'), 'wb') as ofile:
-        desc = build_mdesc(m)
-        weights = [l.get_weights() for l in m.layers]
-        pickle.dump((desc, weights), ofile)
-
-
-def load_model(m_path):
-    with open(m_path.format('pkl'), 'rb') as ifile:
-        desc, weights = pickle.load(ifile)
-        m = build_model(desc)
-        m(tf.zeros((1, 17)))
-        for l, w in zip(m.layers, weights):
-            l.set_weights(w)
-        return m
+    print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),ˇnp.mean(losses),np.std(losses)))
 
 
 for i, m in enumerate(pop):
