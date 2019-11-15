@@ -70,7 +70,7 @@ class MEnsamble:
         self.idxs = [[] for i in range(self.n)]
 
     def splitDataset(self, y):
-        bres = [(y > (self.bins[i] - 1e-10)) & (y <= self.bins[i + 1]) for i in range(len(bins) - 1)]
+        bres = [(y > (self.bins[i] - 1e-10)) & (y <= self.bins[i + 1]) for i in range(len(self.bins) - 1)]
         for i in range(self.n):
             res = []
             for j, w in enumerate(self.ws):
@@ -488,7 +488,7 @@ for i in range(NGENS):
     ls_loss, _ = train(pop[ils], LS_EPOCHS)
     losses[ils] = ls_loss
 
-    print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),ˇnp.mean(losses),np.std(losses)))
+    print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),np.mean(losses),np.std(losses)))
 
 
 for i, m in enumerate(pop):
