@@ -188,36 +188,36 @@ def train(m, epochs):
         lss = ts_mae(tf.reshape(y, [-1]), tf.reshape(yp, [-1]))
         return lss
 
-    with progressbar.ProgressBar(max_value=epochs) as bar:
-        PATIENCE = 10
-        i_from_best = 0
-        best_model_path = 'bmodel.h5'
-        best_l = None
-        best_e = None
-        lrn_prog = []
-        for e in range(epochs):
+    # with progressbar.ProgressBar(max_value=epochs) as bar:
+    PATIENCE = 10
+    i_from_best = 0
+    best_model_path = 'bmodel.h5'
+    best_l = None
+    best_e = None
+    lrn_prog = []
+    for e in range(epochs):
 
-            if i_from_best > PATIENCE:
-                break
+        if i_from_best > PATIENCE:
+            break
 
-            for i, btch in enumerate(ds_tr):
-                lss = train_step(m, optimiz, btch)
+        for i, btch in enumerate(ds_tr):
+            lss = train_step(m, optimiz, btch)
 
-                bar.update(e)
+            # bar.update(e)
 
-            ts_mae.reset_states()
-            tloss = test_step(m)
-            lrn_prog.append(tloss.numpy())
+        ts_mae.reset_states()
+        tloss = test_step(m)
+        lrn_prog.append(tloss.numpy())
 
-            i_from_best += 1
+        i_from_best += 1
 
-            if best_l is None or tloss < best_l:
-                i_from_best = 0
-                best_w = m.save_weights(best_model_path)
-                best_l = tloss
+        if best_l is None or tloss < best_l:
+            i_from_best = 0
+            best_w = m.save_weights(best_model_path)
+            best_l = tloss
 
-        m.load_weights(best_model_path)
-        return best_l, lrn_prog
+    m.load_weights(best_model_path)
+    return best_l, lrn_prog
 
 
 ####
@@ -416,6 +416,7 @@ losses = []
 # Initialize pop
 P_BN = 0.5
 MAX_LEN = 8
+print("Building population")
 for i in range(NPOP):
     # random desc
     p_bn = np.random.rand()
@@ -433,7 +434,9 @@ for i in range(NPOP):
     # add to pop
     pop.append(m)
     losses.append(loss)
+    print("Built pop {}".format(i))
 
+print("Starting genetic")
 for i in range(NGENS):
     # take 2 parents
     i1, i2 = np.random.choice(range(NPOP), 2, replace=False)
