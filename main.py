@@ -193,7 +193,11 @@ def train(m, epochs):
     PATIENCE = 10
     i_from_best = 0
     best_model_path = 'bmodel.h5'
-    best_l = None
+
+    ts_mae.reset_states()
+    tloss = test_step(m)
+
+    best_l = tloss
     best_e = None
     lrn_prog = []
     for e in range(epochs):
@@ -217,7 +221,9 @@ def train(m, epochs):
             best_w = m.save_weights(best_model_path)
             best_l = tloss
 
-    m.load_weights(best_model_path)
+    if epochs > 0:
+        m.load_weights(best_model_path)
+
     return best_l, lrn_prog
 
 
@@ -455,6 +461,9 @@ if args.newpop:
         print("Built pop {}".format(i))
 else:
     pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
+    losses = []
+    for m in pop:
+        train(m,0)
 
 print("Starting genetic")
 for i in range(NGENS):
