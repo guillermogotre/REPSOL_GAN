@@ -3,13 +3,13 @@ import os
 import json
 
 @task
-def run(c, config_path='./config.json', git=False, update=True, dev=True):
+def run(c, config_path='./config.json', git=False, update=True, dev=True, cluster=False):
     assert (os.path.isfile(config_path))
     with open(config_path,'r') as ifile:
         config_json = json.load(ifile)['development' if dev else 'production']
-    for p in [config_json['INDATA_FOLDER'],config_json['OUTDATA_FOLDER']]:
-        if not os.path.isdir(p):
-            os.makedirs(p)
+    assert(os.path.isdir(config_json['INDATA_FOLDER']))
+    if not os.path.isdir(config_json['OUTDATA_FOLDER']):
+        os.makedirs(config_json['OUTDATA_FOLDER'])
 
     if git:
         c.run('git pull')
