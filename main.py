@@ -198,7 +198,10 @@ def train(m, epochs):
     tloss = test_step(m)
 
     best_l = tloss
-    best_e = None
+    if epochs > 0:
+        m.save_weights(best_model_path)
+    best_e = -1
+
     lrn_prog = []
     for e in range(epochs):
 
@@ -216,10 +219,10 @@ def train(m, epochs):
 
         i_from_best += 1
 
-        if best_e is None or tloss < best_l:
+        if tloss < best_l:
             best_e = e
             i_from_best = 0
-            best_w = m.save_weights(best_model_path)
+            m.save_weights(best_model_path)
             best_l = tloss
 
     if epochs > 0:
