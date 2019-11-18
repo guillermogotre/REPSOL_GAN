@@ -149,16 +149,10 @@ tr_y = x[:,-1]
 tr_x = scaler.transform(x)
 tr_x[:,-1] = tr_y
 
-ts_size = 2**14
+ts_size = int(tr_x.shape[0]*1/3)
 
-
-
-
-
-
-
-ts_x = tr_x[:-ts_size]
-tr_x = tr_x[-ts_size:]
+ts_x = tr_x[-ts_size:]
+tr_x = tr_x[:-ts_size]
 
 ds_tr = tf.data.Dataset.from_tensor_slices(tr_x).batch(bsize).shuffle(tr_x.shape[0])
 ds_ts = tf.data.Dataset.from_tensor_slices(ts_x).batch(bsize).shuffle(ts_x.shape[0])
@@ -503,6 +497,18 @@ def genRun():
 
     # pop2 = [load_model("/content/drive/My Drive/UGR/REPSOL/data/gen_model_" + str(i) + ".{}") for i in range(40)]
 
+genRun()
+
 pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
-losses = [train(m,0)[0] for m in pop]
-print(list(zip(range(40),losses)))
+losses = [train(m,0)[0].numpy() for m in pop]
+sizes = [sum([l.size for l in m.get_weights()]) for m in pop]
+
+for i,l,s in (zip(range(40),losses,sizes)):
+    print(f'{i}\t{l}\t{s}\n')
+
+
+# # BEST_MODEL
+# m = load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_25.{}"))
+# a=0
+
+# ms = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
