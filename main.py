@@ -28,6 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dev', dest='dev', action='store_true')
 parser.add_argument('--config', dest='config_path', type=str, required=True)
 parser.add_argument('--newpop', action='store_true')
+
 args = parser.parse_args()
 
 with open(args.config_path,'r') as ifile:
