@@ -422,7 +422,7 @@ def load_model(m_path):
             l.set_weights(w)
         return m
 
-def genRun():
+def genRun(save_every=10):
     ####
     ##
     ##  GENETIC ROUTINE
@@ -492,6 +492,9 @@ def genRun():
 
         print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),np.mean(losses),np.std(losses)))
 
+        if((i % save_every) == 0):
+            for i, m in enumerate(pop):
+                save_model(m, os.path.join(CONFIG_JSON['OUTDATA_FOLDER'], "gen_model_" + str(i) + ".{}"))
 
     for i, m in enumerate(pop):
         save_model(m, os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}"))
