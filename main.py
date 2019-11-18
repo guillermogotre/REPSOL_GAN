@@ -427,77 +427,82 @@ def load_model(m_path):
             l.set_weights(w)
         return m
 
-####
-##
-##  GENETIC ROUTINE
-##
-####
+def genRun():
+    ####
+    ##
+    ##  GENETIC ROUTINE
+    ##
+    ####
 
-NGENS = CONFIG_JSON['GEN_NGENS']
-NPOP = CONFIG_JSON['GEN_POPSIZE']
-INIT_EPOCH = CONFIG_JSON['GEN_INIT_EPOCH']
-LS_EPOCHS = CONFIG_JSON['GEN_LS_EPOCH']
+    NGENS = CONFIG_JSON['GEN_NGENS']
+    NPOP = CONFIG_JSON['GEN_POPSIZE']
+    INIT_EPOCH = CONFIG_JSON['GEN_INIT_EPOCH']
+    LS_EPOCHS = CONFIG_JSON['GEN_LS_EPOCH']
 
-pop = []
-losses = []
+    pop = []
+    losses = []
 
-# Initialize pop
-P_BN = 0.5
-MAX_LEN = 8
-print("Building population")
-if args.newpop:
-    for i in range(NPOP):
-        # random desc
-        p_bn = np.random.rand()
-        out_n = np.random.randint(MAX_WIDTH)
-        len_m = np.random.randint(MAX_LEN - 1)
-        d = [
-            {'out': np.random.randint(MAX_WIDTH), 'kr': 'l2', 'br': 'l2', 'bn': np.random.rand() < P_BN} for i in
-            range(np.random.randint(1, MAX_LEN - 1))]
-        d += [{'out': 1, 'kr': 'l2', 'br': 'l2', 'final': True}]
-        print(d)
-        # generate model
-        m = build_model(d)
-        # train for init_epoch
-        loss, _ = train(m, INIT_EPOCH)
-        # add to pop
-        pop.append(m)
-        losses.append(loss)
-        print("Built pop {}".format(i))
-else:
-    pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
-    losses = [train(m,0)[0] for m in pop]
-
-
-print("Starting genetic")
-for i in range(NGENS):
-    # take 2 parents
-    i1, i2 = np.random.choice(range(NPOP), 2, replace=False)
-    # create offspring
-    o1, o2 = net_cross(pop[i1], pop[i2],mutate_prob=2/3)
-    o1_loss, _ = train(o1, INIT_EPOCH)
-    o2_loss, _ = train(o2, INIT_EPOCH)
-    min_o = o1 if o1_loss < o2_loss else o2
-    min_l = min(o1_loss, o2_loss)
-
-    max_p_idx = np.argmax(losses)
-    if min_l < losses[max_p_idx]:
-        pop[max_p_idx] = min_o
-        losses[max_p_idx] = min_l
-
-    # random local search
-
-    if np.random.rand() < 0.5:
-        ils = np.random.choice(range(NPOP))
+    # Initialize pop
+    P_BN = 0.5
+    MAX_LEN = 8
+    print("Building population")
+    if args.newpop:
+        for i in range(NPOP):
+            # random desc
+            p_bn = np.random.rand()
+            out_n = np.random.randint(MAX_WIDTH)
+            len_m = np.random.randint(MAX_LEN - 1)
+            d = [
+                {'out': np.random.randint(MAX_WIDTH), 'kr': 'l2', 'br': 'l2', 'bn': np.random.rand() < P_BN} for i in
+                range(np.random.randint(1, MAX_LEN - 1))]
+            d += [{'out': 1, 'kr': 'l2', 'br': 'l2', 'final': True}]
+            print(d)
+            # generate model
+            m = build_model(d)
+            # train for init_epoch
+            loss, _ = train(m, INIT_EPOCH)
+            # add to pop
+            pop.append(m)
+            losses.append(loss)
+            print("Built pop {}".format(i))
     else:
-        ils = np.argmin(losses)
-    ls_loss, _ = train(pop[ils], LS_EPOCHS)
-    losses[ils] = ls_loss
-
-    print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),np.mean(losses),np.std(losses)))
+        pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
+        losses = [train(m,0)[0] for m in pop]
 
 
-for i, m in enumerate(pop):
-    save_model(m, os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}"))
+    print("Starting genetic")
+    for i in range(NGENS):
+        # take 2 parents
+        i1, i2 = np.random.choice(range(NPOP), 2, replace=False)
+        # create offspring
+        o1, o2 = net_cross(pop[i1], pop[i2],mutate_prob=2/3)
+        o1_loss, _ = train(o1, INIT_EPOCH)
+        o2_loss, _ = train(o2, INIT_EPOCH)
+        min_o = o1 if o1_loss < o2_loss else o2
+        min_l = min(o1_loss, o2_loss)
 
-# pop2 = [load_model("/content/drive/My Drive/UGR/REPSOL/data/gen_model_" + str(i) + ".{}") for i in range(40)]
+        max_p_idx = np.argmax(losses)
+        if min_l < losses[max_p_idx]:
+            pop[max_p_idx] = min_o
+            losses[max_p_idx] = min_l
+
+        # random local search
+
+        if np.random.rand() < 0.5:
+            ils = np.random.choice(range(NPOP))
+        else:
+            ils = np.argmin(losses)
+        ls_loss, _ = train(pop[ils], LS_EPOCHS)
+        losses[ils] = ls_loss
+
+        print("GEN {}: Min={}\tMean={}\tStd={}".format(i,np.min(losses),np.mean(losses),np.std(losses)))
+
+
+    for i, m in enumerate(pop):
+        save_model(m, os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}"))
+
+    # pop2 = [load_model("/content/drive/My Drive/UGR/REPSOL/data/gen_model_" + str(i) + ".{}") for i in range(40)]
+
+pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
+losses = [train(m,0)[0] for m in pop]
+print(list(zip(range(40),losses)))
