@@ -571,7 +571,8 @@ def trainHard(m, epochs):
         ])
 
     # with progressbar.ProgressBar(max_value=epochs) as bar:
-    PATIENCE = 10
+    # PATIENCE = 10
+    PATIENCE = epochs+1
     i_from_best = 0
     best_model_path = 'bmodel.h5'
 
@@ -626,7 +627,7 @@ import pickle
 with open("in_data/validation_templateCV_ENSAMBLE_NOPLS_2101.pkl",'rb') as ifile:
     ens = pickle.load(ifile)
 
-trainHard(svr,100)
+trainHard(svr,12)
 save_model(svr,os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"HARD_SVR.{}"))
 # print(trainHard(svr,10)[1])
 
