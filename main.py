@@ -140,7 +140,7 @@ with open(os.path.join(CONFIG_JSON["INDATA_FOLDER"],'predictedXy.pkl'),'rb') as 
     x = pickle.load(ifile)
 
 epochs = 1024
-bsize = 4096
+bsize = 8192
 lrn_prog = []
 
 
@@ -501,18 +501,134 @@ def genRun(save_every=10):
 
     # pop2 = [load_model("/content/drive/My Drive/UGR/REPSOL/data/gen_model_" + str(i) + ".{}") for i in range(40)]
 
-genRun()
+# genRun()
 
-pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
-losses = [train(m,0)[0].numpy() for m in pop]
-sizes = [sum([l.size for l in m.get_weights()]) for m in pop]
+# pop = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
+# losses = [train(m,0)[0].numpy() for m in pop]
+# sizes = [sum([l.size for l in m.get_weights()]) for m in pop]
+#
+# for i,l,s in (zip(range(40),losses,sizes)):
+#     print(f'{i}\t{l}\t{s}\n')
 
-for i,l,s in (zip(range(40),losses,sizes)):
-    print(f'{i}\t{l}\t{s}\n')
+@tf.function
+def aer(y1, y2):
+    return tf.abs(tf.reshape(y1, [-1]) - tf.reshape(y2, [-1]))
+
+def trainHard(m, epochs):
+    optimiz = tf.keras.optimizers.Adam(1e-1, amsgrad=True)
+    ts_mae = tf.keras.metrics.MeanAbsoluteError()
+
+    @tf.function
+    def train_step(m, optimiz, btch):
+        x = btch[:, :-5]
+        y = btch[:, -1]
+
+        # HARD SEL
+        er = aer(m(x),y)
+        max_er = tf.math.reduce_max(er)
+        ALPHA = 2 / 3
+        er = (er / max_er) * ALPHA + (1 - ALPHA)
+        msk = er >= tf.random.uniform(er.shape)
+
+        # print(tf.math.reduce_mean(er),tf.math.reduce_mean(er[msk]))
+        # plt.hist(er)
+        # plt.show()
+        # plt.hist(er[msk])
+        # plt.show()
+        with tf.GradientTape() as tape:
+            yp = m(x[msk], training=True)
+            lss = tr_mse(y[msk], yp)
+        grad = tape.gradient(lss, m.trainable_variables)
+        optimiz.apply_gradients(zip(grad, m.trainable_variables))
+        return lss
+
+    # @tf.function
+    # def test_step(m):
+    #     x = ts_x[:, :-5]
+    #     y = ts_x[:, -1]
+    #     yp = m(x)
+    #     lss = ts_mae(tf.reshape(y, [-1]), tf.reshape(yp, [-1]))
+    #     return lss
+
+    # @tf.function
+    def test_step(m):
+        x = ts_x[:, :-5]
+        y = ts_x[:, -1]
+        yp = m(x)
+
+        y = tf.reshape(y,[-1])
+        yp = tf.reshape(yp,[-1])
+        e = tf.abs(y-yp)
+
+        m1 = y <= 1.3
+        m2 = tf.logical_not(m1) & (y < 1.7)
+        m3 = y >= 1.7
+        return tf.stack([
+            tf.math.reduce_mean(e),
+            tf.math.reduce_mean(e[m1]),
+            tf.math.reduce_mean(e[m2]),
+            tf.math.reduce_mean(e[m3])
+        ])
+
+    # with progressbar.ProgressBar(max_value=epochs) as bar:
+    PATIENCE = 10
+    i_from_best = 0
+    best_model_path = 'bmodel.h5'
+
+    ts_mae.reset_states()
+    tloss = test_step(m).numpy()
+
+    best_l = tloss[0]
+    if epochs > 0:
+        m.save_weights(best_model_path)
+    best_e = -1
+
+    lrn_prog = [tloss]
+    print(lrn_prog[-1])
+    for e in range(epochs):
+
+        if i_from_best > PATIENCE:
+            break
+
+        for i, btch in enumerate(ds_tr):
+            lss = train_step(m, optimiz, btch)
+
+            # bar.update(e)
+
+        ts_mae.reset_states()
+        tloss = test_step(m).numpy()
+        lrn_prog.append(tloss)
+
+        i_from_best += 1
+
+        print(e,lrn_prog[-1])
+
+        if tloss[0] < best_l:
+            best_e = e
+            i_from_best = 0
+            m.save_weights(best_model_path)
+            best_l = tloss[0]
+
+    if epochs > 0:
+        m.load_weights(best_model_path)
+
+    return best_l, lrn_prog
 
 
-# # BEST_MODEL
-# m = load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_25.{}"))
-# a=0
+# BEST_MODEL
+svr = load_model(os.path.join(CONFIG_JSON['INDATA_FOLDER'],"BEST_SVR_MODEL.{}"))
+print(build_mdesc(svr))
+#
+# # ms = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
+df = pd.read_csv(os.path.join(CONFIG_JSON['INDATA_FOLDER'],"validation_templateCV_ENSAMBLE_NOPLS_2101.csv"))
 
-# ms = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
+import pickle
+with open("in_data/validation_templateCV_ENSAMBLE_NOPLS_2101.pkl",'rb') as ifile:
+    ens = pickle.load(ifile)
+
+trainHard(svr,100)
+save_model(svr,os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"HARD_SVR.{}"))
+# print(trainHard(svr,10)[1])
+
+a = 0
+
