@@ -506,7 +506,7 @@ def aer(y1, y2):
     return tf.abs(tf.reshape(y1, [-1]) - tf.reshape(y2, [-1]))
 
 def trainHard(m, epochs, ds_tr, ds_ts):
-    optimiz = tf.keras.optimizers.Adam(1e-4, amsgrad=True)
+    optimiz = tf.keras.optimizers.Adam(1e-1, amsgrad=True)
     ts_mae = tf.keras.metrics.MeanAbsoluteError()
 
     @tf.function
@@ -611,6 +611,8 @@ def trainHard(m, epochs, ds_tr, ds_ts):
 # BEST_MODEL
 svr = load_model(os.path.join(CONFIG_JSON['INDATA_FOLDER'],"BEST_SVR_MODEL.{}"))
 print(build_mdesc(svr))
+for l in svr.layers[:11]:
+    l.trainable= False
 #
 # # ms = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
 df = pd.read_csv(os.path.join(CONFIG_JSON['INDATA_FOLDER'],"validation_templateCV_ENSAMBLE_NOPLS_2101.csv"))
