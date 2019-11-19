@@ -19,6 +19,7 @@ parser.add_argument('--dev', dest='dev', action='store_true')
 parser.add_argument('--config', dest='config_path', type=str, required=True)
 parser.add_argument('--newpop', action='store_true')
 parser.add_argument('--epochs', type=int, dest='epochs', default=100)
+parser.add_argument('--hardalpha', type=float, default=0.)
 
 args = parser.parse_args()
 
@@ -517,7 +518,7 @@ def trainHard(m, epochs, ds_tr, ds_ts):
         # HARD SEL
         er = aer(m(x),y)
         max_er = tf.math.reduce_max(er)
-        ALPHA = 0.5
+        ALPHA = args.hardalpha
         er = (er / max_er) * ALPHA + (1 - ALPHA)
         msk = er >= tf.random.uniform(er.shape)
 
