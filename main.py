@@ -617,7 +617,7 @@ import pickle
 with open("in_data/validation_templateCV_ENSAMBLE_NOPLS_2101.pkl",'rb') as ifile:
     ens = pickle.load(ifile)
 
-trainHard(svr,200)
+print(trainHard(svr,400)[0])
 save_model(svr,os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"HARD_SVR.{}"))
 # print(trainHard(svr,10)[1])
 
