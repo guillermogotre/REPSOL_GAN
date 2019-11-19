@@ -19,7 +19,7 @@ parser.add_argument('--dev', dest='dev', action='store_true')
 parser.add_argument('--config', dest='config_path', type=str, required=True)
 parser.add_argument('--newpop', action='store_true')
 parser.add_argument('--epochs', type=int, dest='epochs', default=100)
-parser.add_argument('--hardalpha', type=float, default=0.)
+parser.add_argument('--hardalpha', type=float, default=0.5)
 
 args = parser.parse_args()
 
@@ -147,8 +147,8 @@ ts_size = int(tr_x.shape[0]*1/3)
 ts_x = tr_x[-ts_size:]
 tr_x = tr_x[:-ts_size]
 
-ds_tr = tf.data.Dataset.from_tensor_slices(tr_x).batch(bsize).shuffle(tr_x.shape[0])
-ds_ts = tf.data.Dataset.from_tensor_slices(ts_x).batch(bsize).shuffle(ts_x.shape[0])
+ds_aug = tf.data.Dataset.from_tensor_slices(tr_x).shuffle(tr_x.shape[0])
+# ds_ts = tf.data.Dataset.from_tensor_slices(ts_x).batch(bsize).shuffle(ts_x.shape[0])
 
 tr_mse = tf.keras.losses.MeanSquaredError()
 
@@ -506,12 +506,12 @@ def genRun(save_every=10):
 def aer(y1, y2):
     return tf.abs(tf.reshape(y1, [-1]) - tf.reshape(y2, [-1]))
 
-def trainHard(m, epochs, ds_tr, ds_ts):
+def trainHard(m, epochs, ds_tr, ds_aug, ds_ts):
     optimiz = tf.keras.optimizers.Adam(1e-1, amsgrad=True)
     ts_mae = tf.keras.metrics.MeanAbsoluteError()
 
     @tf.function
-    def train_step(m, optimiz, btch):
+    def train_step(m, optimiz, btch, btch_aug):
         x = btch[:, :-5]
         y = btch[:, -1]
 
@@ -527,9 +527,18 @@ def trainHard(m, epochs, ds_tr, ds_ts):
         # plt.show()
         # plt.hist(er[msk])
         # plt.show()
+
+        # Aug assignment
+        gt1 = y[msk]
+        gt2 = btch_aug[~msk][:,-1]
+        gt = tf.concat([gt1,gt2],0)
+
         with tf.GradientTape() as tape:
-            yp = m(x[msk], training=True)
-            lss = tr_mse(y[msk], yp)
+            yp = tf.concat([
+                m(x[msk], training=True),
+                m(btch_aug[~msk][:,:-5], training=True)
+            ],0)
+            lss = tr_mse(gt, yp)
         grad = tape.gradient(lss, m.trainable_variables)
         optimiz.apply_gradients(zip(grad, m.trainable_variables))
         return lss
@@ -584,8 +593,8 @@ def trainHard(m, epochs, ds_tr, ds_ts):
         if i_from_best > PATIENCE:
             break
 
-        for i, btch in enumerate(ds_tr):
-            lss = train_step(m, optimiz, btch)
+        for i, (btch_tr,btch_aug) in enumerate(zip(ds_tr,ds_aug)):
+            lss = train_step(m, optimiz, btch_tr, btch_aug)
 
             # bar.update(e)
 
@@ -629,6 +638,7 @@ tr_x = tr_x[tr_msk]
 bsize = 256
 
 ds_tr = tf.data.Dataset.from_tensor_slices(tr_x).batch(bsize).shuffle(tr_x.shape[0])
+ds_aug = ds_aug.batch(bsize)
 ds_ts = tf.data.Dataset.from_tensor_slices(ts_x).batch(bsize)
 
 import pickle
@@ -639,7 +649,7 @@ eval_x = scaler.transform(df[VAR_SEL])
 
 
 
-print(trainHard(svr,args.epochs,ds_tr,ds_ts)[0])
+print(trainHard(svr,args.epochs,ds_tr,ds_aug,ds_ts)[0])
 save_model(svr,os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"HARD_SVR.{}"))
 # print(trainHard(svr,10)[1])
 
