@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dev', dest='dev', action='store_true')
 parser.add_argument('--config', dest='config_path', type=str, required=True)
 parser.add_argument('--newpop', action='store_true')
+parser.add_argument('--epochs', type=int, dest='epochs', default=100)
 
 args = parser.parse_args()
 
@@ -504,8 +505,8 @@ def genRun(save_every=10):
 def aer(y1, y2):
     return tf.abs(tf.reshape(y1, [-1]) - tf.reshape(y2, [-1]))
 
-def trainHard(m, epochs):
-    optimiz = tf.keras.optimizers.Adam(1e-1, amsgrad=True)
+def trainHard(m, epochs, ds_tr, ds_ts):
+    optimiz = tf.keras.optimizers.Adam(1e-4, amsgrad=True)
     ts_mae = tf.keras.metrics.MeanAbsoluteError()
 
     @tf.function
@@ -542,6 +543,7 @@ def trainHard(m, epochs):
 
     # @tf.function
     def test_step(m):
+        ts_x = tf.concat(list(ds_ts),0)
         x = ts_x[:, :-5]
         y = ts_x[:, -1]
         yp = m(x)
@@ -613,11 +615,28 @@ print(build_mdesc(svr))
 # # ms = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
 df = pd.read_csv(os.path.join(CONFIG_JSON['INDATA_FOLDER'],"validation_templateCV_ENSAMBLE_NOPLS_2101.csv"))
 
+ts_msk = df.cv_split == 0
+tr_msk = (df.cv_split != -1) & ~ts_msk
+
+tr_x = scaler.transform(df[VAR_SEL]).astype(np.float32)
+
+ts_x = tr_x[ts_msk]
+tr_x = tr_x[tr_msk]
+
+bsize = 256
+
+ds_tr = tf.data.Dataset.from_tensor_slices(tr_x).batch(bsize).shuffle(tr_x.shape[0])
+ds_ts = tf.data.Dataset.from_tensor_slices(ts_x).batch(bsize)
+
 import pickle
 with open("in_data/validation_templateCV_ENSAMBLE_NOPLS_2101.pkl",'rb') as ifile:
     ens = pickle.load(ifile)
 
-print(trainHard(svr,2000)[0])
+eval_x = scaler.transform(df[VAR_SEL])
+
+
+
+print(trainHard(svr,args.epochs,ds_tr,ds_ts)[0])
 save_model(svr,os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"HARD_SVR.{}"))
 # print(trainHard(svr,10)[1])
 
