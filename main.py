@@ -516,7 +516,7 @@ def trainHard(m, epochs):
         # HARD SEL
         er = aer(m(x),y)
         max_er = tf.math.reduce_max(er)
-        ALPHA = 0
+        ALPHA = 0.5
         er = (er / max_er) * ALPHA + (1 - ALPHA)
         msk = er >= tf.random.uniform(er.shape)
 
