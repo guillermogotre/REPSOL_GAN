@@ -612,9 +612,9 @@ def trainHard(m, epochs, ds_tr, ds_ts):
 # BEST_MODEL
 svr = load_model(os.path.join(CONFIG_JSON['INDATA_FOLDER'],"BEST_SVR_MODEL.{}"))
 print(build_mdesc(svr))
-for l in svr.layers[:11]:
+for l in svr.layers[:-1]:
     l.trainable= False
-#
+
 # # ms = [load_model(os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"gen_model_" + str(i) + ".{}")) for i in range(40)]
 df = pd.read_csv(os.path.join(CONFIG_JSON['INDATA_FOLDER'],"validation_templateCV_ENSAMBLE_NOPLS_2101.csv"))
 
