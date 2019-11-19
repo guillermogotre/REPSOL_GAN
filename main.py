@@ -1,23 +1,13 @@
-import tensorflow as tf
-
+import copy
 import json
 import os
-
-import progressbar
-
-from tensorflow.keras import layers
+import pickle
 
 import numpy as np
 import pandas as pd
-
+import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import ShuffleSplit
-
-import matplotlib.pyplot as plt
-import pickle
-import time
-
-import copy
+from tensorflow.keras import layers
 
 BATCH_SIZE = 16
 BUFFER_SIZE = 2**20
@@ -627,7 +617,7 @@ import pickle
 with open("in_data/validation_templateCV_ENSAMBLE_NOPLS_2101.pkl",'rb') as ifile:
     ens = pickle.load(ifile)
 
-trainHard(svr,12)
+trainHard(svr,200)
 save_model(svr,os.path.join(CONFIG_JSON['OUTDATA_FOLDER'],"HARD_SVR.{}"))
 # print(trainHard(svr,10)[1])
 
